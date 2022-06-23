@@ -6,6 +6,7 @@ import numpy as np
 import typing
 import numpy.typing
 import cv2
+import pathlib
 
 currentLine: typing.Tuple = ()
 
@@ -58,30 +59,55 @@ def click_event(event, x, y, flags, params):
         rectangles.append((first_click, (x, y)))
 
 
+def annotation(filePathString: str):
+    global current_image
+    global img
+    global rectangles
+    # reading the image
+    while (True):
+        filePath = pathlib.Path(filePathString)
+        img = cv2.imread(filePath.absolute().__str__(), 1)
+        current_image = img
+        the_image = img
+
+        # displaying the image
+        cv2.imshow('image', img)
+
+        # setting mouse handler for the image
+        # and calling the click_event() function
+        cv2.setMouseCallback('image', click_event)
+
+        # wait for a key to be pressed to exit
+        pressed_key = cv2.waitKey(0) # TODO: return is the key presed. If sa
+
+        if pressed_key == 32:
+            # Space was pressed, we save and go to the next one
+            # close the window
+            cv2.destroyAllWindows()
+
+            yolo_anno = map(lambda x: yolo.YoloAnnotation(x[0], x[1]), rectangles)
+            anno = yolo.ImageAnnotation(filePath.stem, yolo_anno)
+            anno.saveAnnotation()
+
+            rectangles = []
+            break
+        elif pressed_key == 68:
+            # d is pressed for deleting all rect and start again
+            rectangles = []
+            continue
+
+
+
+
+
+def multiAnnotation(folderPath: str, extension: str):
+    path = pathlib.Path(folderPath)
+    files = list(path.glob(f'./*.{extension}'))
+    for file in files:
+        annotation(file.__str__())
+
+
 # driver function
 if __name__ == "__main__":
-    # reading the image
-    img = cv2.imread('../data/frame0_2.jpg', 1)
-    current_image = img
-    the_image = img
-
-    # displaying the image
-    cv2.imshow('image', img)
-
-    # setting mouse handler for the image
-    # and calling the click_event() function
-    cv2.setMouseCallback('image', click_event)
-
-    # wait for a key to be pressed to exit
-    cv2.waitKey(0)
-
-    # close the window
-    cv2.destroyAllWindows()
-
-    yolo_anno = map(lambda x: yolo.YoloAnnotation(x[0], x[1]), rectangles)
-    fa = list(yolo_anno)[0]
-    print(fa)
-
-    cv2.rectangle(the_image, (fa.x, fa.y), (fa.x + fa.width, fa.y + fa.height), (0, 255, 0), 2)
-    cv2.imshow("abc", the_image)
-    cv2.waitKey(0)
+    # annotation('../data/frame0_2.jpg')
+    multiAnnotation('../data/', 'jpg')
